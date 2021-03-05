@@ -7,9 +7,9 @@
 #ifndef VOLUMEANALYSIS
 #define VOLUMEANALYSIS
 
-#define FLOWPUMP 2
-
+double flowRate;
 unsigned int volume;
+volatile int count; // volatile to update correctly
 
 int calculateVolume(int coinValue){
   /* This function calculates the volume to be dispensed based on
@@ -41,6 +41,17 @@ int calculateVolume(int coinValue){
 
   return volume;
   
+}
+
+int dispensedVolume(){
+  /*
+   * ISR
+   * Keep track of the total amount of volume that has been dispensed
+   * Return currentVolume
+   */
+
+   count++;
+   
 }
 
 #endif

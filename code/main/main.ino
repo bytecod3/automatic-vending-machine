@@ -1,19 +1,17 @@
+#include "defines.h"
 #include "volumeAnalysis.h"
 #include "switch-state.h"
 
-#define COIN_ACCEPTOR_PIN 3 // assign interrupt pin 3 to coin acceptor
-
 void setup() {
-  
   Serial.begin(9600);
 
   // switch pins and LEDs
-  pinMode(statusLed, OUTPUT);
-  digitalWrite(statusLed, LOW);// dispensing LED indicator is initially low
-  pinMode(switchPin, INPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  // digitalWrite(STATUS_LED, LOW); // dispensing LED indicator is initially low
+  pinMode(SWITCH_PIN, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(COIN_ACCEPTOR_PIN), readCoin(), FALLING); // read the coin value every time a coin is inserted
-  attachInterrupt(digitalPinToInterrupt(FLOWPUMP), dispensedVolume(), RISING); // keep track of the total volume that has been dispensed
+  attachInterrupt(digitalPinToInterrupt(FLOW_METER), dispensedVolume(), RISING); // keep track of the total volume that has been dispensed
    
 }
 
@@ -21,22 +19,27 @@ void loop() {
 
   // read the coin value
   
-  newSwitchState = digitalRead(switchPin);
+  newSwitchState = digitalRead(SWITCH_PIN);
 
   if(newSwitchState != oldSwitchState){
     // has the start been pressed?
     if(newSwitchState ==HIGH){
-      if(statusLed == LOW){
-        digitalWrite(statusLed, HIGH);
+      if(STATUS_LED == LOW){
+        digitalWrite(STATUS_LED, HIGH);
         ledStatus = HIGH;
       }else{
-        digitalWrite(statusLed, LOW);
-        statusLed = LOW;
+        digitalWrite(STATUS_LED, LOW);
+        STATUS_LED = LOW;
       }
     }
     oldSwitchState = newSwitchState;
   }
- 
+
+  count =0; // reset the counter to start counting from 0 again
+  interrupts(); // enable interrupts on the arduino 
+  delay(1000); //wait 1 second
+  noInterrupts(); // disable interrupts on the arduino
+  
 }
 
 int readCoin(){
@@ -46,13 +49,4 @@ int readCoin(){
    * Return the value
    */
 
-}
-
-int dispensedVolume(){
-  /*
-   * ISR
-   * Keep track of the total amount of volume that has been dispensed
-   * Return currentVolume
-   */
-   
 }
