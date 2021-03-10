@@ -5,10 +5,7 @@
 #define FLOW_METER 2
 
 // pin to show the liquid is being dispensed
-#define STATUS_LED 3
+#define STATUS_LED 5
 
 // pin to turn on the pump to start dispensing
 #define SWITCH_PIN 9
-
-unsigned int flowRate;
-unsigned int flowVolume;
