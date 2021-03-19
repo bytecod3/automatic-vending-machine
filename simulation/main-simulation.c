@@ -104,6 +104,7 @@ void loop() {
       volume = calculateVolume(coin_value);
       mySerial.println("Volume:  ");
       mySerial.print(volume);
+      mySerial.print(" mls");
       mySerial.println();
       
       // start dispensing the volume calculated
@@ -141,18 +142,35 @@ int calculateVolume(int coin_value){
 }
 
 void runMotor(){
-   // check if start button has been pressed
+
+      while(digitalRead(start_button) == LOW){
+	 // wait for the start button to be pressed
+	 mySerial.println("Press the start button...");
+	 delay(200);
+      }
+      
       if(digitalRead(start_button) == HIGH){
 	 // start pumping the volume of oil
 	 // run the dc motor as pump for simulation
 	 //using PWM here
+	 
+	 mySerial.println("Dispensing...");
+	 mySerial.print(volume);
 	 for(unsigned int i=0; i <volume; i++){
 	    analogWrite(motor, i);
 	    digitalWrite(led_indicator, HIGH);
+	    mySerial.print(i);
+	    mySerial.print(" mls");
+	    mySerial.println();
 	    delay(10);
 	 } 
-      }else{
-	 mySerial.println("Press the start button..");
-	 delay(500);
-      }
+	 
+	 // stop the motor
+	 analogWrite(motor, LOW);
+	 
+	 // show message when done
+	 mySerial.println("Done. Please remove container");
+	 
+	 }
+      
 }
