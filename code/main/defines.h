@@ -9,3 +9,6 @@
 
 // pin to turn on the pump to start dispensing
 #define SWITCH_PIN 9
+
+// pump pin on the arduino
+#define PUMP_SIGNAL 10
