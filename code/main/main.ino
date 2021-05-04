@@ -1,4 +1,5 @@
 #include <Keypad.h>
+#include <Vector.h>
 #include "defines.h"
 #include "volumeAnalysis.h"
 #include "switch.h"
@@ -29,6 +30,10 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // coin acceptor variables
 boolean insert = false;
 volatile int pulse = 0;
+
+// vector variables for string validation
+Vector<int> stringIndices;
+int significantAmount;
 
 void setup() {
   Serial.begin(9600);
@@ -85,13 +90,49 @@ void loop() {
     // otherwise run the pump and measure the volume passed through the flowmeter simultaneously
     runPump(volumeToSell, volumePassed);
     
-  }else{
+  }else if(insert ==0){
     // if there is no coin, check input from the keypad
+      char key = keypad.getKey(); //read the key
+      
+        // if the key pressed is a number, create a string containing the numbers pressed
+        while((key != '*') && (key != '#')){
+          
+          // append the key pressed to the amount variable
+          amount_entered += key;
+        
+        }
+        
+        
+        // remove leading zeroes and call the calculateVolume Function.
+        volumeToSell = calculateVolFromKeypad(removeLeadingZeros(amountEntered));
+        
+        // wait for buyer to press the start. Todo: refactor this code into a function
+        while(checkStartButton == 0){
+          // blink the orange LED at 200ms
+          digitalWrite(STATUS_LED, HIGH);
+          delay(200);
+          digitalWrite(STATUS_LED, LOW);
+          delay(200);
+        }
+      
+        // otherwise run the pump and measure the volume passed through the flowmeter simultaneously
+        runPump(volumeToSell, volumePassed);  
+        
+        /*
+         * todo:
+         * Long pressing for delete/backspace
+         * pressing # as an enter key
+         */
+        
+        } else{
+           // process mobile money payments here
+        }
+        
+        
     
-  }
-
-}
-
+    }
+    
+    
 int runPump(double targetVolume, double pumpedVolume){
   /*
    * params: targetVolume -> Volume to sell
@@ -99,7 +140,7 @@ int runPump(double targetVolume, double pumpedVolume){
    *          
    */
    
-  // start the pump to sell oil
+  // start pumping the oil
   while(pumpedVolume != targetVolume){
     digitalWrite(PUMP_SIGNAL, HIGH);
 
@@ -112,30 +153,29 @@ int runPump(double targetVolume, double pumpedVolume){
 
   // once done, set orange LED high
   digitalWrite(STATUS_LED, HIGH);
+  
+  // reset the volume passed through the flowmeter to 0 for the next round
+  volumePassed = 0;
+  
+}
+    
+    
+int checkStartButton(){
+      reading = digitalRead(SWITCH_PIN); // read switch pin
+    
+      if(reading == HIGH){
+        return 1;
+      } else{
+        return 0;
+      }
+
 }
 
-
-int checkStartButton(){
-  reading = digitalRead(SWITCH_PIN); // read switch pin
-
-  if(reading == HIGH){
-    return 1;
-  } else{
-    return 0;
-  }
-
-  //  if(reading != switchState){
-  //    // if switch state has changed
-  //    if(reading == HIGH && switchState == LOW){
-  //      ledState = !ledState;
-  //    }
-  //    
-  //    digitalWrite(STATUS_LED, ledState); // turn the LED on or off
-  //    
-  //    switchState = reading; // update switch state
-  //  }
-
+double calculateVolFromKeypad(int amountPressed){
+  // this function calculates volume to dispense from the amt entered on the keypad
+  // assumption: 500mls of oil cost 130/=, which means 1ml of oil costs 0.26/=
   
+  return amountPressed/0.26;
 }
 
 
@@ -173,7 +213,6 @@ int calculateVolume(int coinValue){
 
 int rpm(){
   /*
-   * ISR
    * Keep track of the total amount of volume that has been dispensed
    * Return currentVolume
    */
@@ -194,4 +233,19 @@ int readCoin(){
   
    
 
+}
+
+int removeLeadingZeroes(String parameter){
+  /*
+  This function removes leading zeroes from the string parameter
+  */
+  for(int i=0; i<parameter.length();i++){
+    if(parameter[i] != 0){
+      stringIndices.PushBack(i);
+    }else{
+      continue;
+    }
+  }
+  
+  significantAmount = int(parameter.substring(stringIndices[0]));
 }
