@@ -37,7 +37,7 @@ int significantAmount;
 
 // LCD Screen Variables. 16x2 LCD screen at I2C adress 0x27. (Texas Instruments)
 LiquidCrystal_I2C LCDDisplay(0x27, 16, 2);
-const byte glyph[8] ={ // custom glyph
+const byte AlienGlyph[8] ={ // custom glyph. For the love of Aliens (>_<)
   0b11111,
   0b10101,
   0b11111,
@@ -67,7 +67,7 @@ void setup() {
   LCDDisplay.backlight();
 
   // custom glyph
-  LCDDisplay.createChar(0, glyph);
+  LCDDisplay.createChar(0, AlienGlyph);
   LCDDisplay.setCursor(7, 0);
   LCDDisplay.write(0);
 
@@ -203,7 +203,7 @@ int runPump(double targetVolume, double pumpedVolume){
   // once done, set orange LED high and display message done on the screen
   digitalWrite(STATUS_LED, HIGH);
 
-  LCDDisplay.createChar(0, glyph);
+  LCDDisplay.createChar(0, AlienGlyph);
   LCDDisplay.setCursor(7, 0);
   LCDDisplay.write(0);
   
