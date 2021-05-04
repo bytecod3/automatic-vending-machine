@@ -1,8 +1,8 @@
 #include <Keypad.h>
+#include <LiquidCrystal_I2C.h>
 #include <Vector.h>
 #include "defines.h"
-#include "volumeAnalysis.h"
-#include "switch.h"
+
 
 // volume analysis variables
 volatile int flowPulse; 
@@ -35,6 +35,19 @@ volatile int pulse = 0;
 Vector<int> stringIndices;
 int significantAmount;
 
+// LCD Screen Variables. 16x2 LCD screen at I2C adress 0x27. (Texas Instruments)
+LiquidCrystal_I2C LCDDisplay(0x27, 16, 2);
+const byte glyph[8] ={ // custom glyph
+  0b11111,
+  0b10101,
+  0b11111,
+  0b11111,
+  0b01110,
+  0b01010,
+  0b11011,
+  0b00000
+};
+
 void setup() {
   Serial.begin(9600);
 
@@ -48,7 +61,19 @@ void setup() {
   
   attachInterrupt(digitalPinToInterrupt(COIN_ACCEPTOR_PIN), readCoin(), FALLING); // read the coin value every time a coin is inserted
   
-   
+  // initialize LCD
+  LCDDisplay.init();
+  LCDDisplay.clear();
+  LCDDisplay.backlight();
+
+  // custom glyph
+  LCDDisplay.createChar(0, glyph);
+  LCDDisplay.setCursor(7, 0);
+  LCDDisplay.write(0);
+
+  // welcome messsage
+  lcd.setCursor(4, 1);
+  lcd.print("WELCOME"); 
 }
 
 void loop() {
@@ -72,12 +97,20 @@ void loop() {
   //=====================Read Coin=====================
   if(insert){
     insert = false;
-    Serial.println("Coin detected"); // figure out coin value
+    Serial.println("Coin detected"); 
+    //todo: figure out coin value
 
     // send this value to the function to calculate the volume
     // assume value = val
     volumeToSell = calculateVolume(30)/1000;
 
+    // display coin value entered
+    LCDDisplay.clear();
+    LCDDisplay.setCursor(0,0);
+    LCDDisplay.print("Amount: ");
+    //LCDDisplay.print(coinValue); // print the coin value
+    
+    
     // wait for buyer to press the start 
     while(checkStartButton == 0){
       // blink the orange LED at 200ms
@@ -104,7 +137,13 @@ void loop() {
         
         
         // remove leading zeroes and call the calculateVolume Function.
-        volumeToSell = calculateVolFromKeypad(removeLeadingZeros(amountEntered));
+        volumeToSell = calculateVolFromKeypad(removeLeadingZeros(amount_entered));
+
+        // display coin value entered
+        LCDDisplay.clear();
+        LCDDisplay.setCursor(0,0);
+        LCDDisplay.print("Amount: ");
+        LCDDisplay.print(amount_entered); // print the coin value
         
         // wait for buyer to press the start. Todo: refactor this code into a function
         while(checkStartButton == 0){
@@ -125,11 +164,9 @@ void loop() {
          */
         
         } else{
-           // process mobile money payments here
+           // PROCESS MOBILE MONEY
         }
-        
-        
-    
+            
     }
     
     
@@ -139,11 +176,23 @@ int runPump(double targetVolume, double pumpedVolume){
    *          pumpedVolume -> volume that has passed through the flowmeter
    *          
    */
+
+   // print the volume to sell
+    LCDDisplay.clear();
+    LCDDisplay.setCursor(0,0);
+    LCDDisplay.print("Volume: "); 
+    LCDDisplay.print(targetVolume);
+    LCDDisplay.print(" L");
    
   // start pumping the oil
   while(pumpedVolume != targetVolume){
     digitalWrite(PUMP_SIGNAL, HIGH);
 
+    // display running status
+    LCDDisplay.setCursor(0,1);
+    LCDDisplay.print("Running...");
+    LCDDisplay.blink();
+    
     // blink orange LED while oil is being pumped
     digitalWrite(STATUS_LED, HIGH);
     delay(300);
@@ -151,23 +200,31 @@ int runPump(double targetVolume, double pumpedVolume){
     delay(300);  
   }
 
-  // once done, set orange LED high
+  // once done, set orange LED high and display message done on the screen
   digitalWrite(STATUS_LED, HIGH);
+
+  LCDDisplay.createChar(0, glyph);
+  LCDDisplay.setCursor(7, 0);
+  LCDDisplay.write(0);
+  
+  LCDDisplay.setCursor(0,1);
+  LCDDisplay.print("Done!");
+  LCDDisplay.blink();
+  
   
   // reset the volume passed through the flowmeter to 0 for the next round
   volumePassed = 0;
   
 }
     
-    
 int checkStartButton(){
-      reading = digitalRead(SWITCH_PIN); // read switch pin
+    // read switch pin
     
-      if(reading == HIGH){
-        return 1;
-      } else{
-        return 0;
-      }
+    if(digitalRead(SWITCH_PIN) == HIGH){
+      return 1;
+    } else{
+      return 0;
+    }
 
 }
 
@@ -177,7 +234,6 @@ double calculateVolFromKeypad(int amountPressed){
   
   return amountPressed/0.26;
 }
-
 
 int calculateVolume(int coinValue){
   /* This function calculates the volume to be dispensed based on
@@ -235,17 +291,17 @@ int readCoin(){
 
 }
 
-int removeLeadingZeroes(String parameter){
+int removeLeadingZeros(String parameter){
   /*
   This function removes leading zeroes from the string parameter
   */
-  for(int i=0; i<parameter.length();i++){
+  for(int i=0; i < parameter.length();i++){
     if(parameter[i] != 0){
-      stringIndices.PushBack(i);
+      stringIndices.push_back(i);
     }else{
       continue;
     }
   }
   
-  significantAmount = int(parameter.substring(stringIndices[0]));
+  significantAmount = parameter.substring(stringIndices[0]).toInt();
 }
